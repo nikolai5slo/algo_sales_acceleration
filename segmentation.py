@@ -7,12 +7,12 @@ import helpers.graph as graph
 import networkx as nx
 import community
 
-def segmentation(B, B_test, k):
+def segmentation(B, B_test):
     # Get each side from bipartite graph
     sets = nx.bipartite.sets(B_test)
 
     # Construct full graph with product nodes and relations between them
-    G = graph.construct_relation_graph(B, k, 0)
+    G = graph.construct_relation_graph(B, 0)
 
     # Partition graph (with community library)
     parts = community.best_partition(G, resolution = 0.3)
@@ -48,5 +48,4 @@ B = graph.construct_bi_graph_buyer_product(train)
 B_test = graph.construct_bi_graph_buyer_product(test)
 
 
-res = [segmentation(B, B_test, k) for k in range(0, 10)]
-print(res)
+print(segmentation(B, B_test))

@@ -33,9 +33,9 @@ def construct_bi_graph_buyer_product(orders, name = 'Bipartite'):
     return G
 
 
-def construct_relation_graph(B, k = 0, set = 0, weight_fn = lambda i1, i2, w: len(w), name=""):
+def construct_relation_graph(B, set = 0, weight_fn = lambda i1, i2, w: len(w), name=""):
     hash = hashlib.md5(nx.info(B).encode('utf-8')).hexdigest()
-    filename = 'graph_' + hash + '_' + str(k) + name +'.pkl'
+    filename = 'graph_' + hash + '_' + name +'.pkl'
     if os.path.isfile('cache/' + filename) and False:
         with open('cache/' + filename, 'rb') as f:
             dprint("Relation graph loaded...")
@@ -56,7 +56,7 @@ def construct_relation_graph(B, k = 0, set = 0, weight_fn = lambda i1, i2, w: le
 
 
     # Add edges to graph
-    G.add_weighted_edges_from([edge for edge in edges if edge[2] and edge[2] >= k])
+    G.add_weighted_edges_from([edge for edge in edges if edge[2]])
 
     dprint("Relation graph constructed")
 

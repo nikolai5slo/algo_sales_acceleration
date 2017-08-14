@@ -50,7 +50,7 @@ def countBuyers(cur):
 def print_latex_table_format(data):
     for d in data:
         addpercent = d + (d[2]*100 / d[1],)
-        print('{\\tt %s} & %d & %d (%.1f%%) \\\\' % addpercent)
+        print('{\\tt %s} & %d & %d (%.1f\\%%) \\\\' % addpercent)
 # Connect to mysql
 with db.cursor() as cur:
     data = []

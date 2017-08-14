@@ -1,38 +1,17 @@
-from itertools import groupby
-
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
 import numpy as np
-import decimal
+import helpers.weights as weights
 
 from helpers.helpers import dprint
 
 
-def predict_buyers_for_products(B, products, k = 0, products_info = {}):
+def predict_buyers_for_products(B, products, k = 0, weight_fn = lambda x: len(x)):
     """ Do prediction for each products """
 
-    def wieght_rating(i1, i2, products):
-        l = np.array([float(products_info[p]['rating']) if p in products_info and products_info[p]['rating'] != None else float(0) for p in products])
-        sum = np.sum(l)
-        if sum <= 0:
-            return len(products)*2.5
-        return len(products) + (sum/5)*5
-
-    def weight_category(i1, i2, products):
-        l = map(lambda pi: product_info[pi]['category'], products)
-        g = [len(list(group)) for key, group in groupby(l)]
-        if len(g) > 0:
-            return len(products) + max(g)
-        return len(products)
-
-    def simple_weight(i1, i2, products):
-        return len(products)
-
-
-
     # Construct graph with product nodes and buyer edges from bipartite graph
-    G = graph.construct_relation_graph(B, k, 0, simple_weight, 'c05')
+    G = graph.construct_relation_graph(B, 0, weight_fn, 'c05')
 
 
     for product in products:
@@ -77,8 +56,8 @@ def validate_buyers_for_products(B_test, predictions, allBuyersCount):
 
 # Load orders
 #TODO: Exclude orders in promotions
-orders = data.load_orders()
-orders = list(filter(lambda o: o['promotion'] == None, orders))
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 20)
+#orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
 #TODO: Better splitting (percent)
@@ -96,12 +75,12 @@ testBuyers, testProducts = nx.bipartite.sets(B_test)
 
 all_c = len(buyers)
 
-product_info = {order['buyer']: order for order in orders}
+product_info = {order['product']: order for order in orders}
 
 results = {}
-for k in range(1, 6):
+for k in range(1, 10):
     dprint("Running for k: ", k)
-    predicted = predict_buyers_for_products(B, testProducts, k, product_info)
+    predicted = predict_buyers_for_products(B, testProducts, k, weights.cutOffK(weights.simple_weight(), k))
     scores = validate_buyers_for_products(B_test, predicted, all_c)
     results[k] = tuple(np.average(list(scores), axis=0))
 

@@ -3,6 +3,8 @@ import os
 from urllib.error import HTTPError
 
 import math
+
+import numpy as np
 from amazon.api import AmazonAPI
 import pickle
 import time
@@ -25,7 +27,7 @@ def load_orders_from_db():
 
         dprint("Fetching buyers...")
         # Execute sql query which gets all buyers who had ordered at least 20 orders
-        cur.execute("SELECT mb.orders.customer_email FROM mb.orders WHERE orders.customer_email IS NOT NULL GROUP BY orders.customer_email HAVING COUNT(*) > 10;")
+        cur.execute("SELECT mb.orders.customer_email FROM mb.orders WHERE orders.customer_email IS NOT NULL GROUP BY orders.customer_email HAVING COUNT(*) > 7;")
 
         # Get all distinct buyers
         buyers = set(map(lambda x: x[0], cur.fetchall()))
@@ -33,10 +35,11 @@ def load_orders_from_db():
         dprint("Querying orders...")
         # Execute query which gets all ordered products with buyer, seller
         format_strings = ','.join(['%s'] * len(buyers))
-        credentials = '262, 316, 880, 979, 1012, 1039, 1045, 1150, 1324, 1715, 1991, 2027, 30, 75, 124, 232, 346, 502, 523, 670, 754, 787, 790, 808, 820, 838, 883, 913, 982, 1069, 1102, 1162, 1165, 1189, 1210, 1213, 1288, 1300, 1348, 1366, 1381, 1408, 1427, 1506, 1572, 1611, 1635, 1769, 1775, 1820, 1838, 1868, 1964, 2015, 2024, 38, 628, 700, 793, 1048, 1072, 1192, 1216, 1231, 1387, 1420, 1429, 1641, 1670, 1910, 1940, 1967, 53, 631, 709, 796, 1075, 1201, 1225, 1237, 1463, 1679, 1727, 1841, 1973, 41, 703, 739, 799, 1078, 1198, 1219, 1234, 1432, 1673, 1733, 1871, 1970, 59, 712, 742, 802, 1081, 1204, 1222, 1240, 1438, 1664, 1709, 1721, 1976'
+        cur.execute("SELECT id FROM user_amazon_credentials WHERE marketplace_id != 1")
+        credentials = ','.join(map(str, np.ndarray.flatten(np.array(cur.fetchall()))))
         cur.execute(
             #AVG(IF(ISNULL(feedback.rating),0,feedback.rating)) GROUP_BY order_items.id
-            "SELECT orders.credential_id, customer_email, order_items.product_id, AVG(reviews.rating), promotion_id FROM orders INNER JOIN order_items ON orders.id = order_items.order_id LEFT JOIN mb.order_item_promotion ON mb.order_items.id = mb.order_item_promotion.order_item_id LEFT JOIN reviews ON reviews.product_id = order_items.product_id WHERE orders.customer_email IN (%s) AND orders.credential_id NOT IN (%s) GROUP BY order_items.id ORDER BY orders.status_shipped_at" % (format_strings, credentials),
+            "SELECT orders.credential_id, customer_email, order_items.product_id, AVG(reviews.rating), promotion_id, IFNULL(quantity_ordered, 1) FROM orders INNER JOIN order_items ON orders.id = order_items.order_id LEFT JOIN mb.order_item_promotion ON mb.order_items.id = mb.order_item_promotion.order_item_id LEFT JOIN reviews ON reviews.product_id = order_items.product_id WHERE orders.customer_email IN (%s) AND orders.credential_id NOT IN (%s) GROUP BY order_items.id ORDER BY orders.status_shipped_at" % (format_strings, credentials),
             tuple(buyers))
 
         # Orders to list
@@ -45,12 +48,13 @@ def load_orders_from_db():
             'buyer': hashlib.md5(order[1].encode('utf-8')).hexdigest(),
             'product': order[2],
             'rating': order[3],
-            'promotion': order[4]
-        }, cur.fetchall()))
+            'promotion': order[4],
+            'quantity': order[5]
+        }, filter(lambda order: order[1] is not None ,cur.fetchall())))
 
         # Print orders stat info
         dprint("Orders count: ", len(orders))
-        dprint("Buyers count: ", len(buyers))
+        #dprint("Buyers count: ", len(buyers))
 
         return orders
 
@@ -153,3 +157,20 @@ def get_additional_data_from_amz(orders):
 
     dprint('Progress... 100%')
     return orders_adi
+
+
+def cut_orders_by_repeated_buyers(orders, k):
+    ''' Cuts orders by number of repeated orders for product '''
+    buyers = defaultdict(int)
+    for o in orders:
+        buyers[o['buyer']]+=o['quantity']
+
+    return list(filter(lambda o: buyers[o['buyer']] >= k, orders))
+
+def cut_orders_by_products(orders, k):
+    ''' Cuts orders by number of repeated orders for product '''
+    buyers = defaultdict(int)
+    for o in orders:
+        buyers[o['product']]+=o['quantity']
+
+    return list(filter(lambda o: buyers[o['product']] >= k, orders))

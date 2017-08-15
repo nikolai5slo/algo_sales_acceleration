@@ -7,7 +7,7 @@ import helpers.weights as weights
 from helpers.helpers import dprint
 
 
-def predict_buyers_for_products(B, products, k = 0, weight_fn = lambda x: len(x)):
+def predict_buyers_for_products(B, products, weight_fn = lambda x: len(x)):
     """ Do prediction for each products """
 
     # Construct graph with product nodes and buyer edges from bipartite graph
@@ -56,7 +56,7 @@ def validate_buyers_for_products(B_test, predictions, allBuyersCount):
 
 # Load orders
 #TODO: Exclude orders in promotions
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 20)
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 10)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
@@ -78,13 +78,19 @@ all_c = len(buyers)
 product_info = {order['product']: order for order in orders}
 
 results = {}
-for k in range(1, 10):
+for k in range(0, 30):
     dprint("Running for k: ", k)
-    predicted = predict_buyers_for_products(B, testProducts, k, weights.cutOffK(weights.simple_weight(), k))
+    w_fns = [
+        weights.simple_weight(),
+        weights.weight_rating(product_info),
+        weights.weight_quantity(product_info),
+        weights.weight_promotion(product_info)
+    ]
+    w_ws = [0.6, 0.2, 0.5, 0.1]
+    predicted = predict_buyers_for_products(B, testProducts, weights.cutOffK(weights.combine_weights(w_fns, w_ws), k))
     scores = validate_buyers_for_products(B_test, predicted, all_c)
     results[k] = tuple(np.average(list(scores), axis=0))
 
 
 for k, scores in results.items():
     print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
-    #print(k, ":", scores)

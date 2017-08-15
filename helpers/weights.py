@@ -1,12 +1,14 @@
 import numpy as np
-from itertools import groupby
+from itertools import groupby, zip_longest
+
+
 
 def weight_rating(products_info):
     def _(i1, i2, products):
         l = np.array(
             [float(products_info[p]['rating']) if p in products_info and products_info[p]['rating'] != None else float(0)
              for p in products])
-        return np.sum(l) / len(products)
+        return np.sum(l) / len(products) if len(l) > 0 else 0
     return _
 
 
@@ -40,5 +42,18 @@ def cutOffK(fn, k):
     def _(i1, i2, products):
         ret = fn(i1, i2, products)
         return ret if ret and ret >= k else None
+
+    return _
+
+def combine_weights(fns, weights = []):
+    def _(i1, i2, products):
+        res = []
+        for fn in fns:
+            r = fn(i1, i2, products)
+            if r is None:
+                return None
+            res.append(r)
+
+        return sum(a * b for a, b in zip_longest(res, weights, fillvalue = 1))
 
     return _

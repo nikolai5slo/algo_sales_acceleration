@@ -1,20 +1,20 @@
+from functools import reduce
+
+import numpy as np
+
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
-import numpy as np
 import helpers.weights as weights
 
-from helpers.helpers import dprint
-
 # Load orders
-#TODO: Exclude orders in promotions
-from predictor import predict_buyers_for_products, validate_buyers_for_products
+from helpers.helpers import dprint
+from predictor import predict_products_for_buyers, predict_buyers_for_products, validate_buyers_for_products
 
 orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 20)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
-#TODO: Better splitting (percent)
 # Split orders into train and test sets
 train, test = data.split_train_set(orders)
 
@@ -34,14 +34,16 @@ product_info = {order['product']: order for order in orders}
 results = {}
 for k in range(0, 30):
     dprint("Running for k: ", k)
-    w_fns = [
-        weights.simple_weight(),
-        weights.weight_rating(product_info),
-        weights.weight_quantity(product_info),
-        weights.weight_promotion(product_info)
-    ]
-    w_ws = [0.6, 0.2, 0.5, 0.1]
-    predicted = predict_buyers_for_products(B, testProducts, weights.cutOffK(weights.combine_weights(w_fns, w_ws), k))
+    predictedProducts = predict_products_for_buyers(B, testBuyers, weights.cutOffK(lambda i1, i2, buyers: len(buyers), k))
+    buyer_products = { buyer: products for buyer, products in predictedProducts }
+
+    predictedBuyers = predict_buyers_for_products(B, testProducts, weights.cutOffK(lambda i1, i2, products: len(products), k))
+
+    product_buyers = { product: buyers for product, buyers in predictedBuyers }
+
+    predicted = [(product, list(filter(lambda buyer: buyer in buyer_products and product in buyer_products[buyer], buyers))) for product, buyers in product_buyers.items()]
+
+
     scores = validate_buyers_for_products(B_test, predicted, all_c)
     results[k] = tuple(np.average(list(scores), axis=0))
 

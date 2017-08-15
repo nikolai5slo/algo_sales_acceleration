@@ -41,7 +41,7 @@ def simple_weight():
 def cutOffK(fn, k):
     def _(i1, i2, products):
         ret = fn(i1, i2, products)
-        return ret if ret and ret >= k else None
+        return ret is not None if ret and ret >= k else None
 
     return _
 

@@ -10,7 +10,7 @@ from helpers.helpers import dprint
 #TODO: Exclude orders in promotions
 from predictor import predict_buyers_for_products, validate_buyers_for_products
 
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 20)
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 15)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
@@ -32,7 +32,7 @@ all_c = len(buyers)
 product_info = {order['product']: order for order in orders}
 
 results = {}
-for k in range(0, 30):
+for k in range(0, 20):
     dprint("Running for k: ", k)
     w_fns = [
         weights.simple_weight(),

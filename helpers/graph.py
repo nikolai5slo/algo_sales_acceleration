@@ -56,7 +56,7 @@ def construct_relation_graph(B, set = 0, weight_fn = lambda i1, i2, w: len(w), n
 
 
     # Add edges to graph
-    G.add_weighted_edges_from([edge for edge in edges if edge[2]])
+    G.add_weighted_edges_from([edge for edge in edges if edge[2] is not None])
 
     dprint("Relation graph constructed")
 

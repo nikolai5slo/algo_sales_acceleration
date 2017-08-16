@@ -9,7 +9,7 @@ from helpers.helpers import dprint
 # Load orders
 from predictor import predict_products_for_buyers, validate_products_for_buyers
 
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 20)
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 15)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
@@ -30,7 +30,7 @@ all_c = len(buyers)
 product_info = {order['product']: order for order in orders}
 
 results = {}
-for k in range(0, 30):
+for k in range(0, 40):
     dprint("Running for k: ", k)
     predicted = predict_products_for_buyers(B, testBuyers, weights.cutOffK(lambda i1, i2, buyers: len(buyers), k))
     scores = validate_products_for_buyers(B_test, predicted, all_c)

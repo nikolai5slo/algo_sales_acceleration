@@ -12,7 +12,7 @@ def predict_products_for_buyers(B, buyers, weight_fn = lambda x: len(x)):
         trainProducts = nx.neighbors(B, buyer) if buyer in B.nodes() else []
 
         # Do prediction
-        predictedProducts = list(graph.all_neighbours(G, trainProducts))
+        predictedProducts = list(graph.common_neighbours(G, trainProducts))
 
         # Return prediction
         yield buyer, predictedProducts
@@ -62,7 +62,7 @@ def predict_buyers_for_products(B, products, weight_fn = lambda x: len(x)):
         trainBuyers = nx.neighbors(B, product) if product in B.nodes() else []
 
         # Do prediction
-        predictedBuyers = list(graph.all_neighbours(G, trainBuyers))
+        predictedBuyers = list(graph.common_neighbours(G, trainBuyers))
 
         # Return prediction
         yield product, predictedBuyers

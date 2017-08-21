@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from sklearn.ensemble import RandomForestRegressor
+
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
@@ -33,7 +35,7 @@ for order in train:
 for order in test:
     buyer_product_test_count[order['buyer']][order['product']] += 1
 
-def predict_buyers_mining(testProducts, krange = [0]):
+def predict_buyers_mining(testProducts, krange = [0], method = linear_model.LinearRegression):
     i = 0
     Xy = []
     for buyer, prts in buyer_product_count.items():
@@ -49,7 +51,7 @@ def predict_buyers_mining(testProducts, krange = [0]):
     Xytest = np.array(Xytest)
 
     for product in testProducts:
-        print(i/len(testProducts))
+        dprint(i/len(testProducts))
         i+=1
 
         # Train
@@ -57,7 +59,7 @@ def predict_buyers_mining(testProducts, krange = [0]):
         X = np.delete(Xy, idx, 1)
         y = Xy[:,idx]
 
-        l = linear_model.LinearRegression()
+        l = method()
         l.fit(X, y)
 
 
@@ -68,16 +70,21 @@ def predict_buyers_mining(testProducts, krange = [0]):
             potentialBuyers = np.array(list(buyer_product_count.keys()))[predicted > k]
             yield (k, product, potentialBuyers)
 
-results = {}
-all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 2, 30)))
-predicted = defaultdict(list)
-for p in all_predicted:
-    predicted[p[0]].append(p[1:])
+results = [{}, {}]
+for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor]):
+    all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, 20)), m)
+    predicted = defaultdict(list)
+    for p in all_predicted:
+        predicted[p[0]].append(p[1:])
 
-for k, p in predicted.items():
-    scores = validate_buyers_for_products(B_test, p, all_c)
-    results[k] = tuple(np.average(list(scores), axis=0))
+    for k, p in predicted.items():
+        scores = validate_buyers_for_products(B_test, p, all_c)
+        results[idx][k] = tuple(np.average(list(scores), axis=0))
 
-for k, scores in results.items():
-    print("{0:.1f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+print("LINEAR REGRESSION")
+for k, scores in results[0].items():
+    print("{0:.2f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
 
+print("RANDOM FOREST")
+for k, scores in results[1].items():
+    print("{0:.2f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))

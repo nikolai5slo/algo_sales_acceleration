@@ -53,12 +53,12 @@ all_c = len(buyers)
 product_info = {order['product']: order for order in orders}
 
 results = {}
-for k2 in range(0, 2):
+for k2 in range(0, 10):
     predictedProducts = predict_products_for_buyers(B, testBuyers,
                                                     weights.cutOffK(lambda i1, i2, buyers: len(buyers), k2))
     buyer_products = {buyer: products for buyer, products in predictedProducts}
 
-    for k in range(0, 2):
+    for k in range(0, 30):
         dprint("Running for k: ", k, k2)
 
         predictedBuyers = predict_buyers_for_products(B, testProducts,

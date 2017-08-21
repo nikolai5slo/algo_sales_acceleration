@@ -22,26 +22,20 @@ train, test = data.split_train_set(orders)
 B_test = graph.construct_bi_graph_buyer_product(test)
 testBuyers, testProducts = nx.bipartite.sets(B_test)
 
-category_buyers = defaultdict(lambda: defaultdict(int))
-product_category = {order['product']: order['category'] for order in orders}
 
-for order in train:
-    category_buyers[order['category']][order['buyer']] += 1
-
-def predict_category_buyers(testProducts, category_buyers, product_category, k):
+def predict_random_buyers(testProducts, k):
     for product in testProducts:
-        category = product_category[product]
-        buyers = [buyer for buyer, count in category_buyers[category].items() if count > k]
-        yield (product, buyers)
+        by = np.random.choice(list(buyers), all_c - int(all_c * k/100))
+        yield (product, by)
 
 results = {}
-for k in range(0, 20):
+for k in np.linspace(0, 100, 20):
     dprint("Running for k: ", k)
-    predicted = predict_category_buyers(testProducts, category_buyers, product_category, k)
+    predicted = predict_random_buyers(testProducts, k)
 
     scores = validate_buyers_for_products(B_test, predicted, all_c)
     results[k] = tuple(np.average(list(scores), axis=0))
 
 for k, scores in results.items():
-    print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v * 100), scores)))
+    print("{0:.2f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v * 100), scores)))
 

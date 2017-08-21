@@ -1,7 +1,7 @@
 import helpers.graph as graph
 import networkx as nx
 
-def predict_products_for_buyers(B, buyers, weight_fn = lambda x: len(x)):
+def predict_products_for_buyers(B, buyers, weight_fn = lambda x: len(x), neighbour_method = graph.all_neighbours):
     """ Do prediction for each products """
 
     # Construct graph with product nodes and buyer edges from bipartite graph
@@ -12,7 +12,7 @@ def predict_products_for_buyers(B, buyers, weight_fn = lambda x: len(x)):
         trainProducts = nx.neighbors(B, buyer) if buyer in B.nodes() else []
 
         # Do prediction
-        predictedProducts = list(graph.common_neighbours(G, trainProducts))
+        predictedProducts = list(neighbour_method(G, trainProducts))
 
         # Return prediction
         yield buyer, predictedProducts
@@ -50,7 +50,7 @@ def validate_products_for_buyers(B_test, predictions, allProductsCount):
 
 
 
-def predict_buyers_for_products(B, products, weight_fn = lambda x: len(x)):
+def predict_buyers_for_products(B, products, weight_fn = lambda x: len(x), neighbour_method = graph.all_neighbours):
     """ Do prediction for each products """
 
     # Construct graph with product nodes and buyer edges from bipartite graph
@@ -62,7 +62,7 @@ def predict_buyers_for_products(B, products, weight_fn = lambda x: len(x)):
         trainBuyers = nx.neighbors(B, product) if product in B.nodes() else []
 
         # Do prediction
-        predictedBuyers = list(graph.common_neighbours(G, trainBuyers))
+        predictedBuyers = list(neighbour_method(G, trainBuyers))
 
         # Return prediction
         yield product, predictedBuyers
@@ -78,6 +78,9 @@ def validate_buyers_for_products(B_test, predictions, allBuyersCount):
         if len(testBuyers) > 0:
             # Get true positives by intersection between predicted buyers set and test buyer set
             valid = set(predicted).intersection(testBuyers)
+            AUB = set(predicted).union(testBuyers)
+
+            AB = len(valid) / len(AUB) if len(valid) > 0 else 0
 
             # Get share of true positives among all predicted
             valid_predicted = len(valid) / len(predicted) if len(valid) > 0 else 0
@@ -92,7 +95,7 @@ def validate_buyers_for_products(B_test, predictions, allBuyersCount):
             test_all = len(testBuyers) / allBuyersCount if len(testBuyers) > 0 else 0
 
             # Return result
-            yield valid_predicted, valid_test, predicted_all, test_all
+            yield AB, valid_predicted, valid_test, predicted_all, test_all
         #elif len(predicted) <= 0:
             # If no buyer actually bought this product and we predicted that, then we are right
             #yield 0, 0, 0, 1

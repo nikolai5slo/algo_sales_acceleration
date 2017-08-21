@@ -29,13 +29,19 @@ all_c = len(buyers)
 
 product_info = {order['product']: order for order in orders}
 
-results = {}
-for k in range(0, 20):
-    dprint("Running for k: ", k)
-    predicted = predict_products_for_buyers(B, testBuyers, weights.cutOffK(lambda i1, i2, buyers: len(buyers), k))
-    scores = validate_products_for_buyers(B_test, predicted, all_c)
-    results[k] = tuple(np.average(list(scores), axis=0))
+resutls = [{},{}]
+for idx, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
+    for k in range(0, 20):
+        dprint("Running for k: ", k)
+        predicted = predict_products_for_buyers(B, testBuyers, weights.cutOffK(lambda i1, i2, buyers: len(buyers), k), m)
+        scores = validate_products_for_buyers(B_test, predicted, all_c)
+        resutls[idx][k] = tuple(np.average(list(scores), axis=0))
 
 
-for k, scores in results.items():
+print("UNION")
+for k, scores in resutls[0].items():
+    print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+
+print("INTERSECT")
+for k, scores in resutls[1].items():
     print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))

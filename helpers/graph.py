@@ -1,6 +1,7 @@
 import hashlib
 import os
 import pickle
+from collections import defaultdict
 
 import networkx as nx
 import itertools
@@ -21,8 +22,11 @@ def construct_bi_graph_buyer_product(orders, name = 'Bipartite'):
     G.add_nodes_from(products, bipartite = 1)
 
     # Loop trough orders and add edges to bipartite graph
-    for order in orders:
-        G.add_edge(order['buyer'], order['product'])
+    edges = defaultdict(int)
+    for idx, order in enumerate(orders):
+        edges[(order['buyer'], order['product'])] += order['quantity'] * (idx / len(orders) * 3)
+
+    G.add_weighted_edges_from([(b, p, w) for ((b, p), w) in edges.items()])
 
     if(nx.is_bipartite(G)):
         dprint('Bipartite is constructed')

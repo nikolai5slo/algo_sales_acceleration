@@ -1,15 +1,18 @@
 from functools import reduce
 
 import numpy as np
+import sys
+import pickle
 
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
 import helpers.weights as weights
 
-# Load orders
-from helpers.helpers import dprint
+from helpers.helpers import dprint, readArgs
 from predictor import predict_products_for_buyers, predict_buyers_for_products, validate_buyers_for_products
+
+(K, orderlim, saveto) = readArgs()
 
 def combine_union(predictedBuyers, predictedProducts):
     product_buyers = {product: buyers for product, buyers in predictedBuyers}
@@ -32,7 +35,7 @@ def combine_intersect(predictedBuyers, predictedProducts):
 
     return predicted
 
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 15)
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
@@ -53,12 +56,12 @@ all_c = len(buyers)
 product_info = {order['product']: order for order in orders}
 
 results = {}
-for k2 in range(0, 10):
+for k2 in range(0, K):
     predictedProducts = predict_products_for_buyers(B, testBuyers,
                                                     weights.cutOffK(lambda i1, i2, buyers: len(buyers), k2))
     buyer_products = {buyer: products for buyer, products in predictedProducts}
 
-    for k in range(0, 30):
+    for k in range(0, K):
         dprint("Running for k: ", k, k2)
 
         predictedBuyers = predict_buyers_for_products(B, testProducts,
@@ -72,6 +75,10 @@ for k2 in range(0, 10):
 
         scores = validate_buyers_for_products(B_test, predicted, all_c)
         results[(k, k2)] = tuple(np.average(list(scores), axis=0))
+
+if saveto:
+    with open(saveto, 'wb') as f:
+        pickle.dump((results),f)
 
 
 for (k, k2), scores in results.items():

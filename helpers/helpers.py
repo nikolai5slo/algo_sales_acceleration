@@ -1,6 +1,18 @@
 import os
 import sys
 
+def printResults(result):
+    for k, scores in result.items():
+        print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v * 100), scores)))
+
+def readArgs():
+    if '-v' in sys.argv or '--verbose' in sys.argv:
+        return (5, 20, None)
+    K = int(sys.argv[1]) if len(sys.argv) > 1 else 5
+    orderlim = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+    saveto = sys.argv[3] if len(sys.argv) > 3 else None
+
+    return (K, orderlim, saveto)
 
 def dprint(*args):
     if '-v' in sys.argv or '--verbose' in sys.argv:

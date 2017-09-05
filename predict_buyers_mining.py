@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+import sys
+import pickle
 from sklearn.ensemble import RandomForestRegressor
 
 import helpers.data as data
@@ -7,13 +9,15 @@ import helpers.graph as graph
 import networkx as nx
 import numpy as np
 
-from helpers.helpers import dprint
+from helpers.helpers import dprint, readArgs
 
 from predictor import validate_buyers_for_products
 from sklearn import linear_model
 
+(K, orderlim, saveto) = readArgs()
+
 # Load orders
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 15)
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 
 buyers = set([order['buyer'] for order in orders])
 products = list(set([order['product'] for order in orders]))
@@ -72,7 +76,7 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
 
 results = [{}, {}]
 for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor]):
-    all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, 20)), m)
+    all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, K)), m)
     predicted = defaultdict(list)
     for p in all_predicted:
         predicted[p[0]].append(p[1:])
@@ -80,6 +84,12 @@ for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor]):
     for k, p in predicted.items():
         scores = validate_buyers_for_products(B_test, p, all_c)
         results[idx][k] = tuple(np.average(list(scores), axis=0))
+
+if saveto:
+    with open(saveto, 'wb') as f:
+        pickle.dump((results),f)
+
+
 
 print("LINEAR REGRESSION")
 for k, scores in results[0].items():

@@ -1,15 +1,20 @@
+import sys
+import pickle
+
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
 import numpy as np
 import helpers.weights as weights
 
-from helpers.helpers import dprint
+from helpers.helpers import dprint, readArgs, printResults
 
 # Load orders
 from predictor import predict_products_for_buyers, validate_products_for_buyers
 
-orders = data.cut_orders_by_repeated_buyers(data.load_orders(), 15)
+(K, orderlim, saveto) = readArgs()
+
+orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
 
@@ -29,19 +34,32 @@ all_c = len(buyers)
 
 product_info = {order['product']: order for order in orders}
 
-resutls = [{},{}]
+results = [{}, {}]
 for idx, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
-    for k in range(0, 20):
-        dprint("Running for k: ", k)
-        predicted = predict_products_for_buyers(B, testBuyers, weights.cutOffK(lambda i1, i2, buyers: len(buyers), k), m)
-        scores = validate_products_for_buyers(B_test, predicted, all_c)
-        resutls[idx][k] = tuple(np.average(list(scores), axis=0))
+    w1 = weights.simple_weight()
+    w2 = weights.bipartite_products_weights(B)
+    w3 = weights.weight_products_category(product_info)
+    w4 = weights.weight_products_promotion(product_info)
+    for wi, w in enumerate([w1, w2, w3, w4]):
+        def runForK(k):
+            dprint("Running for k: ", k)
+            predicted = predict_products_for_buyers(B, testBuyers,
+                                                    weights.cutOffK(w, k), m)
+            scores = validate_products_for_buyers(B_test, predicted, all_c)
+            return tuple(np.average(list(scores), axis=0))
+        results[idx][wi] = { k: runForK(k) for k in range(0, K) }
 
 
-print("UNION")
-for k, scores in resutls[0].items():
-    print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+if saveto:
+    with open(saveto, 'wb') as f:
+        pickle.dump((results), f)
 
-print("INTERSECT")
-for k, scores in resutls[1].items():
-    print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+for i, r in results[0].items():
+    print("UNION W" + str(i+1))
+    printResults(r)
+
+print()
+
+for i, r in results[1].items():
+    print("INTERSECT W" + str(i+1))
+    printResults(r)

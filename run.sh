@@ -1,15 +1,19 @@
 #!/bin/bash
 
 runTimestamp=$(date +%s)
-echo "Run $runTimestamp:"
+samplesCount=${1:-3}
+filtering=${2:-50}
+echo "Run $runTimestamp ($samplesCount, $filtering):"
 mkdir -p ./results/$runTimestamp
 echo "Predicting buyers with graph..."
-python3 predict_buyers.py > ./results/$runTimestamp/predict_buyers.out
+python3 predict_buyers.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers.pkl" > ./results/$runTimestamp/predict_buyers.out
 echo "Predicting buyers with category..."
-python3 predict_buyers_category.py > ./results/$runTimestamp/predict_buyers_category.out
+python3 predict_buyers_category.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_category.pkl" > ./results/$runTimestamp/predict_buyers_category.out
 echo "Predicting buyers with data mining..."
-python3 predict_buyers_mining.py > ./results/$runTimestamp/predict_buyers_mining.out
+python3 predict_buyers_mining.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_mining.pkl" > ./results/$runTimestamp/predict_buyers_mining.out
 echo "Predicting products with graph..."
-python3 predict_products.py > ./results/$runTimestamp/predict_products.out
+python3 predict_products.py $samplesCount $filtering "./results/$runTimestamp/predict_products.pkl" > ./results/$runTimestamp/predict_products.out
 echo "Predicting buyers with random method..."
-python3 predict_buyers_random.py > ./results/$runTimestamp/predict_buyers_random.out
+python3 predict_buyers_random.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_random.pkl" > ./results/$runTimestamp/predict_buyers_random.out
+echo "Predicting buyers with hybrid method..."
+python3 predict_combined.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_hybrid.pkl" > ./results/$runTimestamp/predict_buyers_hybrid.out

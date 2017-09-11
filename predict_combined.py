@@ -9,10 +9,13 @@ import helpers.graph as graph
 import networkx as nx
 import helpers.weights as weights
 
-from helpers.helpers import dprint, readArgs
+from helpers.helpers import dprint, readArgs, MeasureTimer, Result, printResults
 from predictor import predict_products_for_buyers, predict_buyers_for_products, validate_buyers_for_products
 
 (K, orderlim, saveto) = readArgs()
+
+
+timer = MeasureTimer()
 
 def combine_union(predictedBuyers, predictedProducts):
     product_buyers = {product: buyers for product, buyers in predictedBuyers}
@@ -57,29 +60,32 @@ product_info = {order['product']: order for order in orders}
 
 results = {}
 for k2 in range(0, K):
-    predictedProducts = predict_products_for_buyers(B, testBuyers,
-                                                    weights.cutOffK(lambda i1, i2, buyers: len(buyers), k2))
-    buyer_products = {buyer: products for buyer, products in predictedProducts}
+    with timer:
+        predictedProducts = predict_products_for_buyers(B, testBuyers,
+                                                        weights.cutOffK(lambda i1, i2, buyers: len(buyers), k2))
+        buyer_products = {buyer: products for buyer, products in predictedProducts}
 
-    for k in range(0, K):
-        dprint("Running for k: ", k, k2)
+        for k in range(0, K):
+            dprint("Running for k: ", k, k2)
 
-        predictedBuyers = predict_buyers_for_products(B, testProducts,
-                                                      weights.cutOffK(lambda i1, i2, products: len(products), k))
+            predictedBuyers = predict_buyers_for_products(B, testProducts,
+                                                          weights.cutOffK(lambda i1, i2, products: len(products), k))
 
-        product_buyers = {product: buyers for product, buyers in predictedBuyers}
-
-
-        predicted = [(product, list(filter(lambda buyer: buyer in buyer_products and product in buyer_products[buyer], buyers))) for product, buyers in product_buyers.items()]
+            product_buyers = {product: buyers for product, buyers in predictedBuyers}
 
 
-        scores = validate_buyers_for_products(B_test, predicted, all_c)
-        results[(k, k2)] = tuple(np.average(list(scores), axis=0))
+            predicted = [(product, list(filter(lambda buyer: buyer in buyer_products and product in buyer_products[buyer], buyers))) for product, buyers in product_buyers.items()]
+
+
+            scores = validate_buyers_for_products(B_test, predicted, all_c)
+            #results[(k, k2)] = tuple(np.average(list(scores), axis=0))
+            results[(k, k2)] = list(scores)
 
 if saveto:
     with open(saveto, 'wb') as f:
-        pickle.dump((results),f)
+        pickle.dump(Result(results, timer),f)
 
 
-for (k, k2), scores in results.items():
-    print(str(k) + '_' + str(k2) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+printResults(results)
+
+print("Average time %s" % timer.getAverage())

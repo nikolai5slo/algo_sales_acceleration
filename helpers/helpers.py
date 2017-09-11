@@ -1,9 +1,18 @@
 import os
+import pickle
 import sys
+import time
+
+import numpy as np
+
+from helpers.scoring import SC4, expand, map_many, SC1, SC2, SC3, AtoI, BtoI
+
 
 def printResults(result):
     for k, scores in result.items():
-        print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v * 100), scores)))
+        scs = map_many(SC1(), SC2(), SC3(), AtoI(), BtoI(), SC4(0.1))
+        scores = np.average(list(map(expand(scs), scores)), axis=0)
+        print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.3f}".format(v * 100), scores[:4])), scores[5])
 
 def readArgs():
     if '-v' in sys.argv or '--verbose' in sys.argv:
@@ -40,3 +49,41 @@ class suppress_stdout_stderr(object):
 
         # Close the null file
         os.close(self.null_fd)
+
+
+class MeasureTimer(object):
+    '''
+    Context manager for measuring process time
+    '''
+    def __init__(self, timefun = time.perf_counter):
+        self.runs = []
+        self._fn = timefun
+
+    def __enter__(self):
+        self.time = self._fn()
+
+    def __exit__(self, *args):
+        self.runs.append(self._fn() - self.time)
+
+    def getAverage(self):
+        return sum(self.runs) / len(self.runs)
+
+    def getAvg(self):
+        return self.getAverage()
+
+    def getSum(self):
+        return sum(self.runs)
+
+    def getMax(self):
+        return max(self.runs)
+
+    def getMin(self):
+        return min(self.runs)
+
+    def saveToFile(self, fd):
+        pickle.dump(self.runs, fd)
+
+class Result(object):
+    def __init__(self, results, timer):
+        self.results = results
+        self.timer = timer

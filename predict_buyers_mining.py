@@ -1,15 +1,18 @@
 from collections import defaultdict
 
-import sys
 import pickle
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
 
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
 import numpy as np
 
-from helpers.helpers import dprint, readArgs
+from helpers.helpers import dprint, readArgs, Result, MeasureTimer, printResults
 
 from predictor import validate_buyers_for_products
 from sklearn import linear_model
@@ -33,11 +36,13 @@ testBuyers, testProducts = nx.bipartite.sets(B_test)
 buyer_product_count = defaultdict(lambda: defaultdict(int))
 buyer_product_test_count = defaultdict(lambda: defaultdict(int))
 
+timer = MeasureTimer()
+
 for order in train:
-    buyer_product_count[order['buyer']][order['product']] += 1
+    buyer_product_count[order['buyer']][order['product']] += order['quantity']
 
 for order in test:
-    buyer_product_test_count[order['buyer']][order['product']] += 1
+    buyer_product_test_count[order['buyer']][order['product']] += order['quantity']
 
 def predict_buyers_mining(testProducts, krange = [0], method = linear_model.LinearRegression):
     i = 0
@@ -63,8 +68,21 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
         X = np.delete(Xy, idx, 1)
         y = Xy[:,idx]
 
-        l = method()
-        l.fit(X, y)
+        if KNeighborsRegressor == method:
+            l = method(n_neighbors = 3)
+        elif method == 1:
+            l = make_pipeline(PolynomialFeatures(5), Ridge())
+        else:
+            l = method()
+
+        if method == LogisticRegression:
+            if sum(y > 0) <= 0:
+                for k in krange:
+                    yield (k, product, [])
+                continue
+            l.fit(X, y > 0)
+        else:
+            l.fit(X, y)
 
 
         Xtest = np.delete(Xytest, idx, 1)
@@ -74,27 +92,35 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
             potentialBuyers = np.array(list(buyer_product_count.keys()))[predicted > k]
             yield (k, product, potentialBuyers)
 
-results = [{}, {}]
-for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor]):
-    all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, K)), m)
+results = [{}, {}, {}, {}]
+for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor, KNeighborsRegressor, LogisticRegression]):
+    with timer:
+        all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, K)), m)
     predicted = defaultdict(list)
     for p in all_predicted:
         predicted[p[0]].append(p[1:])
 
     for k, p in predicted.items():
         scores = validate_buyers_for_products(B_test, p, all_c)
-        results[idx][k] = tuple(np.average(list(scores), axis=0))
+        #results[idx][k] = tuple(np.average(list(scores), axis=0))
+        results[idx][k] = list(scores)
 
 if saveto:
     with open(saveto, 'wb') as f:
-        pickle.dump((results),f)
+        pickle.dump(Result(results, timer),f)
 
 
 
 print("LINEAR REGRESSION")
-for k, scores in results[0].items():
-    print("{0:.2f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+printResults(results[0])
 
 print("RANDOM FOREST")
-for k, scores in results[1].items():
-    print("{0:.2f}".format(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v*100), scores)))
+printResults(results[1])
+
+print("KNN")
+printResults(results[2])
+
+print("LOGISTIC REGRESSION")
+printResults(results[3])
+
+print("Average time %s" % timer.getAverage())

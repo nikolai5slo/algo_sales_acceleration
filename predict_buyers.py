@@ -1,5 +1,7 @@
 import sys
 
+import time
+
 import helpers.data as data
 import helpers.graph as graph
 import networkx as nx
@@ -7,7 +9,7 @@ import numpy as np
 import helpers.weights as weights
 import pickle
 
-from helpers.helpers import dprint, readArgs, printResults
+from helpers.helpers import dprint, readArgs, printResults, MeasureTimer, Result
 
 # Load orders
 from predictor import predict_buyers_for_products, validate_buyers_for_products
@@ -34,6 +36,8 @@ all_c = len(buyers)
 
 product_info = {order['product']: order for order in orders}
 
+timer = MeasureTimer()
+
 results = [{}, {}]
 for mi, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
     w1 = weights.simple_weight()
@@ -44,15 +48,18 @@ for mi, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
 
         def runForK(k):
             dprint("Running for k: ", k)
-            predicted = predict_buyers_for_products(B, testProducts, weights.cutOffK(w, k), m)
+            with timer:
+                predicted = predict_buyers_for_products(B, testProducts, weights.cutOffK(w, k), m)
+
             scores = validate_buyers_for_products(B_test, predicted, all_c)
-            return tuple(np.average(list(scores), axis=0))
+            #return tuple(np.average(list(scores), axis=0))
+            return list(scores)
 
         results[mi][wi] = {k: runForK(k) for k in range(0, K)}
 
 if saveto:
     with open(saveto, 'wb') as f:
-        pickle.dump((results),f)
+        pickle.dump(Result(results, timer),f)
 
 for i, r in results[0].items():
     print("UNION W" + str(i+1))
@@ -63,3 +70,5 @@ print()
 for i, r in results[1].items():
     print("INTERSECT W" + str(i+1))
     printResults(r)
+
+print("Average time %s" % timer.getAverage())

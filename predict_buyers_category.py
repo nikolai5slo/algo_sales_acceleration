@@ -8,7 +8,7 @@ import helpers.graph as graph
 import networkx as nx
 import numpy as np
 
-from helpers.helpers import dprint, readArgs
+from helpers.helpers import dprint, readArgs, Result, MeasureTimer, printResults
 
 from predictor import validate_buyers_for_products
 
@@ -30,6 +30,8 @@ testBuyers, testProducts = nx.bipartite.sets(B_test)
 category_buyers = defaultdict(lambda: defaultdict(int))
 product_category = {order['product']: order['category'] for order in orders}
 
+timer = MeasureTimer()
+
 for order in train:
     category_buyers[order['category']][order['buyer']] += 1
 
@@ -42,16 +44,18 @@ def predict_category_buyers(testProducts, category_buyers, product_category, k):
 results = {}
 for k in range(0, K):
     dprint("Running for k: ", k)
-    predicted = predict_category_buyers(testProducts, category_buyers, product_category, k)
+    with timer:
+        predicted = predict_category_buyers(testProducts, category_buyers, product_category, k)
 
     scores = validate_buyers_for_products(B_test, predicted, all_c)
-    results[k] = tuple(np.average(list(scores), axis=0))
+    #results[k] = tuple(np.average(list(scores), axis=0))
+    results[k] = list(scores)
 
 if saveto:
     with open(saveto, 'wb') as f:
-        pickle.dump((results),f)
+        pickle.dump(Result(results, timer),f)
 
 
-for k, scores in results.items():
-    print(str(k) + ', ' + ', '.join(map(lambda v: "{0:.1f}".format(v * 100), scores)))
+printResults(results)
 
+print("Average time %s" % timer.getAverage())

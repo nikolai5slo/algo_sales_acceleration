@@ -22,7 +22,7 @@ def saveToCsv(result, file):
 
 runid='1505153697'
 scorepath='results/' + runid + '/scores'
-if os.path.isdir(scorepath):
+if not os.path.isdir(scorepath):
     os.mkdir(scorepath)
 
 with open('results/' + runid + '/predict_buyers.pkl', 'rb') as f:
@@ -36,9 +36,9 @@ with open('results/' + runid + '/predict_buyers.pkl', 'rb') as f:
 with open('results/' + runid + '/predict_products.pkl', 'rb') as f:
     result = pickle.load(f)
     for w, r in result.results[0].items():
-        saveToCsv(r, scorepath + 'products_alln_%s.csv' % w)
+        saveToCsv(r, scorepath + '/products_alln_%s.csv' % w)
     for w, r in result.results[1].items():
-        saveToCsv(r, scorepath + 'products_commn_%s.csv' % w)
+        saveToCsv(r, scorepath + '/products_commn_%s.csv' % w)
     print(result.timer.getAvg())
 
 with open('results/' + runid + '/predict_buyers_random.pkl', 'rb') as f:
@@ -59,7 +59,7 @@ with open('results/' + runid + '/predict_buyers_mining.pkl', 'rb') as f:
     saveToCsv(result.results[3], scorepath + '/buyers_mining_LR.csv')
     print(result.timer.getAvg())
 
-with open('results/' + runid + '/predict_buyers_combined.pkl', 'rb') as f:
+with open('results/' + runid + '/predict_buyers_hybrid.pkl', 'rb') as f:
     result = pickle.load(f)
-    saveToCsv(result.results, scorepath + '/buyers_combined.csv')
+    saveToCsv(result.results, scorepath + '/buyers_hybrid.csv')
     print(result.timer.getAvg())

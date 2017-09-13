@@ -14,7 +14,7 @@ import numpy as np
 
 from helpers.helpers import dprint, readArgs, Result, MeasureTimer, printResults
 
-from predictor import validate_buyers_for_products
+from predictor import validate_buyers_for_products, validate_products_for_buyers
 from sklearn import linear_model
 
 (K, orderlim, saveto) = readArgs()
@@ -22,8 +22,8 @@ from sklearn import linear_model
 # Load orders
 orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 
-buyers = set([order['buyer'] for order in orders])
-products = list(set([order['product'] for order in orders]))
+buyers = list(set([order['buyer'] for order in orders]))
+products = set([order['product'] for order in orders])
 all_c = len(buyers)
 
 # Split orders into train and test sets
@@ -39,32 +39,32 @@ buyer_product_test_count = defaultdict(lambda: defaultdict(int))
 timer = MeasureTimer()
 
 for order in train:
-    buyer_product_count[order['buyer']][order['product']] += order['quantity']
+    buyer_product_count[order['product']][order['buyer']] += order['quantity']
 
 for order in test:
-    buyer_product_test_count[order['buyer']][order['product']] += order['quantity']
+    buyer_product_test_count[order['product']][order['buyer']] += order['quantity']
 
-def predict_buyers_mining(testProducts, krange = [0], method = linear_model.LinearRegression):
+def predict_products_mining(testBuyers, krange = [0], method = linear_model.LinearRegression):
     i = 0
     Xy = []
-    for buyer, prts in buyer_product_count.items():
-        products_count = [int(prts[p]) for p in products]
-        Xy.append(products_count)
+    for product, byrs in buyer_product_count.items():
+        buyers_count = [int(byrs[b]) for b in buyers]
+        Xy.append(buyers_count)
 
     Xytest = []
-    for buyer, prts in buyer_product_test_count.items():
-        products_count = [int(prts[p]) for p in products]
-        Xytest.append(products_count)
+    for product, byrs in buyer_product_test_count.items():
+        buyers_count = [int(byrs[b]) for b in buyers]
+        Xytest.append(buyers_count)
 
     Xy = np.array(Xy)
     Xytest = np.array(Xytest)
 
-    for product in testProducts:
-        dprint(i/len(testProducts))
+    for buyer in testBuyers:
+        dprint(i/len(testBuyers))
         i+=1
 
         # Train
-        idx = products.index(product)
+        idx = buyers.index(buyer)
         X = np.delete(Xy, idx, 1)
         y = Xy[:,idx]
 
@@ -78,7 +78,7 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
         if method == LogisticRegression:
             if sum(y > 0) <= 0:
                 for k in krange:
-                    yield (k, product, [])
+                    yield (k, buyer, [])
                 continue
             l.fit(X, y > 0)
         else:
@@ -89,19 +89,19 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
         predicted = l.predict(Xtest)
 
         for k in krange:
-            potentialBuyers = np.array(list(buyer_product_test_count.keys()))[predicted > k]
-            yield (k, product, potentialBuyers)
+            potentialProducts = np.array(list(buyer_product_test_count.keys()))[predicted > k]
+            yield (k, buyer, potentialProducts)
 
 results = [{}, {}, {}, {}]
 for idx, m in enumerate([linear_model.LinearRegression, RandomForestRegressor, KNeighborsRegressor, LogisticRegression]):
     with timer:
-        all_predicted = predict_buyers_mining(testProducts, list(np.linspace(0, 1, K)), m)
+        all_predicted = predict_products_mining(testBuyers, list(np.linspace(0, 1, K)), m)
     predicted = defaultdict(list)
     for p in all_predicted:
         predicted[p[0]].append(p[1:])
 
     for k, p in predicted.items():
-        scores = validate_buyers_for_products(B_test, p, all_c)
+        scores = validate_products_for_buyers(B_test, p, all_c)
         #results[idx][k] = tuple(np.average(list(scores), axis=0))
         results[idx][k] = list(scores)
 

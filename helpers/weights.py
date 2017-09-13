@@ -57,14 +57,14 @@ def bipartite_weights(B):
     def _(i1, i2, products):
         if len(products) == 0:
             return 0
-        return np.sum([B[i1][p]['weight'] + B[i2][p]['weight'] for p in products])
+        return np.sum([B[i1][p]['weight'] + B[i2][p]['weight'] for p in products])/2
     return _
 
 def bipartite_products_weights(B):
     def _(i1, i2, buyers):
         if len(buyers) == 0:
             return 0
-        return np.sum([B[b][i1]['weight'] + B[b][i2]['weight'] for b in buyers])
+        return np.sum([B[b][i1]['weight'] + B[b][i2]['weight'] for b in buyers])/2
     return _
 
 def cutOffK(fn, k):

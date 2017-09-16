@@ -24,7 +24,7 @@ orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 
 buyers = list(set([order['buyer'] for order in orders]))
 products = set([order['product'] for order in orders])
-all_c = len(buyers)
+all_c = len(products)
 
 # Split orders into train and test sets
 train, test = data.split_train_set(orders)
@@ -89,7 +89,7 @@ def predict_products_mining(testBuyers, krange = [0], method = linear_model.Line
         predicted = l.predict(Xtest)
 
         for k in krange:
-            potentialProducts = np.array(list(buyer_product_test_count.keys()))[predicted > k]
+            potentialProducts = np.array(list(buyer_product_test_count.keys()))[predicted >= k]
             yield (k, buyer, potentialProducts)
 
 results = [{}, {}, {}, {}]

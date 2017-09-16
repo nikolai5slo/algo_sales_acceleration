@@ -3,8 +3,13 @@ import pickle
 
 import numpy as np
 from helpers.scoring import *
-import os
+import os, sys
 
+if len(sys.argv) > 1:
+    runid=sys.argv[1]
+else:
+    print("Please specify runid")
+    exit(1)
 
 def saveToCsv(result, file, hybrid=False):
     with open(file, 'w') as f:
@@ -23,7 +28,7 @@ def saveToCsv(result, file, hybrid=False):
 
         w.writerows(X)
 
-runid='1505298904'
+#runid='1505382358'
 scorepath='results/' + runid + '/scores'
 if not os.path.isdir(scorepath):
     os.mkdir(scorepath)

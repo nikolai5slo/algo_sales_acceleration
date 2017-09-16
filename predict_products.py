@@ -19,6 +19,7 @@ timer = MeasureTimer()
 orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 #orders = list(filter(lambda o: o['promotion'] == None, orders))
 buyers = set([order['buyer'] for order in orders])
+products = set([order['product'] for order in orders])
 
 # Split orders into train and test sets
 train, test = data.split_train_set(orders)
@@ -32,7 +33,7 @@ B_test = graph.construct_bi_graph_buyer_product(test)
 # Get all test products from test set
 testBuyers, testProducts = nx.bipartite.sets(B_test)
 
-all_c = len(buyers)
+all_c = len(products)
 
 product_info = {order['product']: order for order in orders}
 
@@ -46,8 +47,7 @@ for idx, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
         def runForK(k):
             dprint("Running for k: ", k)
             with timer:
-                predicted = predict_products_for_buyers(B, testBuyers,
-                                                    weights.cutOffK(w, k), m)
+                predicted = predict_products_for_buyers(B, testBuyers, weights.cutOffK(w, k), m)
             scores = validate_products_for_buyers(B_test, predicted, all_c)
             #return tuple(np.average(list(scores), axis=0))
             return list(scores)

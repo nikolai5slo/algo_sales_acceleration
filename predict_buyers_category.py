@@ -33,7 +33,7 @@ product_category = {order['product']: order['category'] for order in orders}
 timer = MeasureTimer()
 
 for order in train:
-    category_buyers[order['category']][order['buyer']] += 1
+    category_buyers[order['category']][order['buyer']] += order['quantity']
 
 def predict_category_buyers(testProducts, category_buyers, product_category, k):
     for product in testProducts:

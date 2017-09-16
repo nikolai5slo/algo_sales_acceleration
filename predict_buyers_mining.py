@@ -89,7 +89,7 @@ def predict_buyers_mining(testProducts, krange = [0], method = linear_model.Line
         predicted = l.predict(Xtest)
 
         for k in krange:
-            potentialBuyers = np.array(list(buyer_product_test_count.keys()))[predicted > k]
+            potentialBuyers = np.array(list(buyer_product_test_count.keys()))[predicted >= k]
             yield (k, product, potentialBuyers)
 
 results = [{}, {}, {}, {}]

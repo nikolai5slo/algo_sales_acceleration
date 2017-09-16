@@ -17,8 +17,8 @@ def printResults(result):
 def readArgs():
     if '-v' in sys.argv or '--verbose' in sys.argv:
         return (5, 20, None)
-    K = int(sys.argv[1]) if len(sys.argv) > 1 else 5
-    orderlim = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+    K = int(sys.argv[1]) if len(sys.argv) > 1 else 4
+    orderlim = int(sys.argv[2]) if len(sys.argv) > 2 else 30
     saveto = sys.argv[3] if len(sys.argv) > 3 else None
 
     return (K, orderlim, saveto)

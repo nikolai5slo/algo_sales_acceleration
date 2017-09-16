@@ -19,7 +19,8 @@ import operator
 orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 
 buyers = set([order['buyer'] for order in orders])
-all_c = len(buyers)
+products = set([order['product'] for order in orders])
+all_c = len(products)
 
 # Split orders into train and test sets
 train, test = data.split_train_set(orders)
@@ -34,7 +35,7 @@ category_products = defaultdict(list)
 timer = MeasureTimer()
 
 for order in train:
-    category_buyers[order['buyer']][order['category']] += 1
+    category_buyers[order['buyer']][order['category']] += order['quantity']
     category_products[order['category']].append(order['product'])
 
 def predict_category_products(testBuyers, category_buyers, category_products, k):

@@ -24,7 +24,7 @@ def construct_bi_graph_buyer_product(orders, name = 'Bipartite'):
     # Loop trough orders and add edges to bipartite graph
     edges = defaultdict(int)
     for idx, order in enumerate(orders):
-        edges[(order['buyer'], order['product'])] += order['quantity'] * (idx / len(orders) * 3)
+        edges[(order['buyer'], order['product'])] += order['quantity'] * (idx / len(orders))
 
     G.add_weighted_edges_from([(b, p, w) for ((b, p), w) in edges.items()])
 
@@ -53,7 +53,7 @@ def construct_relation_graph(B, set = 0, weight_fn = lambda i1, i2, w: len(w), n
     # Get all combinations between (0 - buyers, 1 - products) set items
     combinations = itertools.combinations(sets[set], 2)
 
-    G = nx.Graph()
+    G = nx.empty_graph(len(sets[set]))
 
     # Construct edges with weights
     edges = [(i1, i2, weight_fn(i1, i2, list(nx.common_neighbors(B, i1, i2)))) for (i1, i2) in combinations]
@@ -78,7 +78,7 @@ def common_neighbours(G, nodes):
     return {}
 
 def all_neighbours(G, nodes):
-    """ Finds common neighbours of specified nodes """
+    """ Finds all neighbours of specified nodes """
     items = [set(nx.neighbors(G, node)) for node in nodes if node in G.nodes()]
     if(len(items) > 0):
         return set.union(*items)

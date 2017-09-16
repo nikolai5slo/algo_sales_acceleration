@@ -60,9 +60,8 @@ def validate_buyers_for_products(B_test, predictions, allBuyersCount):
         testBuyers = nx.neighbors(B_test, product) if product in B_test.nodes() else []
 
         # Score
-        if len(testBuyers) > 0:
-            # Get true positives by intersection between predicted buyers set and test buyer set
-            TP = set(predicted).intersection(testBuyers)
+        # Get true positives by intersection between predicted buyers set and test buyer set
+        TP = set(predicted).intersection(testBuyers)
 
-            # Return sets (A, B, TP, I)
-            yield len(predicted), len(testBuyers), len(TP), allBuyersCount
+        # Return sets (A, B, TP, I)
+        yield len(predicted), len(testBuyers), len(TP), allBuyersCount

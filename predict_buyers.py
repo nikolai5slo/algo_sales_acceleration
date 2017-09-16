@@ -44,7 +44,8 @@ for mi, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
     w2 = weights.bipartite_weights(B)
     w3 = weights.weight_category(product_info)
     w4 = weights.weight_promotion(product_info)
-    for wi, w in enumerate([w1, w2, w3, w4]):
+    w5 = weights.weight_rating(product_info)
+    for wi, w in enumerate([w1,w2,w3]):
 
         def runForK(k):
             dprint("Running for k: ", k)

@@ -67,6 +67,11 @@ def bipartite_products_weights(B):
         return np.sum([B[b][i1]['weight'] + B[b][i2]['weight'] for b in buyers])/2
     return _
 
+def constant(k):
+    def _(i1, i2, products):
+        return k
+    return _
+
 def cutOffK(fn, k):
     def _(i1, i2, products):
         ret = fn(i1, i2, products)

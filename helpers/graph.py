@@ -2,6 +2,7 @@ import hashlib
 import os
 import pickle
 from collections import defaultdict
+from operator import itemgetter
 
 import networkx as nx
 import itertools
@@ -24,7 +25,8 @@ def construct_bi_graph_buyer_product(orders, name = 'Bipartite'):
     # Loop trough orders and add edges to bipartite graph
     edges = defaultdict(int)
     for idx, order in enumerate(orders):
-        edges[(order['buyer'], order['product'])] += order['quantity'] * (idx / len(orders))
+        edges[(order['buyer'], order['product'])] += order['quantity']
+                                                     #* (idx / len(orders))
 
     G.add_weighted_edges_from([(b, p, w) for ((b, p), w) in edges.items()])
 

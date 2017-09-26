@@ -31,11 +31,11 @@ timer = MeasureTimer()
 
 def predict_random_buyers(testProducts, k):
     for product in testProducts:
-        by = np.random.choice(list(buyers), all_c - int(all_c * k/100), replace=False)
+        by = np.random.choice(list(buyers), int(all_c * k/100), replace=False)
         yield (product, by)
 
 results = {}
-for k in np.linspace(0, 100, K):
+for k in map(int, np.linspace(100, 0, K)):
     dprint("Running for k: ", k)
     with timer:
         predicted = predict_random_buyers(testProducts, k)

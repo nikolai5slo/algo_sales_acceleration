@@ -28,7 +28,6 @@ def saveToCsv(result, file, hybrid=False):
 
         w.writerows(X)
 
-#runid='1505382358'
 scorepath='results/' + runid + '/scores'
 if not os.path.isdir(scorepath):
     os.mkdir(scorepath)

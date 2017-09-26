@@ -43,7 +43,7 @@ for idx, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
     w2 = weights.bipartite_products_weights(B)
     w3 = weights.weight_products_category(product_info)
     w4 = weights.weight_products_promotion(product_info)
-    for wi, w in enumerate([w1, w2, w3, w4]):
+    for wi, w in enumerate([w1, w2, w3]):
         def runForK(k):
             dprint("Running for k: ", k)
             with timer:
@@ -51,7 +51,16 @@ for idx, m in enumerate([graph.all_neighbours, graph.common_neighbours]):
             scores = validate_products_for_buyers(B_test, predicted, all_c)
             #return tuple(np.average(list(scores), axis=0))
             return list(scores)
-        results[idx][wi] = { k: runForK(k) for k in range(0, K) }
+
+        if w == w3:
+            results[idx][wi] = {k: runForK(k) for k in range(0, 3)}
+        elif m == graph.all_neighbours:
+            if w == w2:
+                results[idx][wi] = {k: runForK(k) for k in map(int, np.linspace(0, 800, K))}
+            else:
+                results[idx][wi] = {k: runForK(k) for k in map(int, np.linspace(0, 300, K))}
+        else:
+            results[idx][wi] = {k: runForK(k) for k in list(range(0, int(K/2))) + list(map(int, np.linspace(K/2, 100, int(K/2))))}
 
 
 if saveto:

@@ -15,6 +15,7 @@ echo "Predicting buyers with data mining..."
 python3 predict_buyers_mining.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_mining.pkl" > ./results/$runTimestamp/predict_buyers_mining.out &
 echo "Predicting buyers with random method..."
 python3 predict_buyers_random.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_random.pkl" > ./results/$runTimestamp/predict_buyers_random.out &
+wait
 
 echo "Predicting buyers with hybrid method..."
 python3 predict_combined.py $samplesCount $filtering "./results/$runTimestamp/predict_buyers_hybrid.pkl" > ./results/$runTimestamp/predict_buyers_hybrid.out

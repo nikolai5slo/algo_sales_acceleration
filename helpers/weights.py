@@ -96,3 +96,8 @@ def combine_weights(fns, weights = []):
         return sum(a * b for a, b in zip_longest(res, weights, fillvalue = 1))
 
     return _
+
+def _sum(fns):
+    def _(i1, i2, products):
+        return sum([fn(i1, i2, products) for fn in fns])
+    return _

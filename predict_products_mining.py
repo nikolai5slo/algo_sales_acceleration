@@ -23,7 +23,7 @@ from sklearn import linear_model
 orders = data.cut_orders_by_repeated_buyers(data.load_orders(), orderlim)
 
 buyers = list(set([order['buyer'] for order in orders]))
-products = set([order['product'] for order in orders])
+products = list(set([order['product'] for order in orders]))
 all_c = len(products)
 
 # Split orders into train and test sets
@@ -41,6 +41,8 @@ timer = MeasureTimer()
 for order in train:
     buyer_product_count[order['product']][order['buyer']] += order['quantity']
 
+for order in orders:
+    buyer_product_test_count[order['product']] = defaultdict(int)
 for order in test:
     buyer_product_test_count[order['product']][order['buyer']] += order['quantity']
 

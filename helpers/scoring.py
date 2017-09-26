@@ -6,12 +6,12 @@ def SC3():
 
 def SC1():
     def _(A, B, TP, I):
-        return TP / A if TP > 0 else 0
+        return TP / B if TP > 0 else 0
     return _
 
 def SC2():
     def _(A, B, TP, I):
-        return TP / B if TP > 0 else 0
+        return TP / A if TP > 0 else 0
     return _
 
 def SC4(alpha):

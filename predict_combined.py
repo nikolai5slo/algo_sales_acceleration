@@ -10,7 +10,8 @@ import networkx as nx
 import helpers.weights as weights
 
 from helpers.helpers import dprint, readArgs, MeasureTimer, Result, printResults
-from predictor import predict_products_for_buyers, predict_buyers_for_products, validate_buyers_for_products
+from predictor import predict_products_for_buyers, predict_buyers_for_products, validate_buyers_for_products, \
+    validate_products_for_buyers
 
 (K, orderlim, saveto) = readArgs()
 
@@ -58,34 +59,56 @@ all_c = len(buyers)
 
 product_info = {order['product']: order for order in orders}
 
-results = {}
-for k2 in range(0, K):
-    with timer:
-        predictedProducts = predict_products_for_buyers(B, testBuyers,
-                                                        weights.cutOffK(lambda i1, i2, buyers: len(buyers), k2))
-        buyer_products = {buyer: products for buyer, products in predictedProducts}
+def methodIntersect(buyer_products, product_buyers):
+    for product, buyers in product_buyers.items():
+        yield (product, list(filter(lambda buyer: buyer in buyer_products and product in buyer_products[buyer], buyers)))
+def methodUnion(buyer_products, product_buyers):
+    for product, buyers in product_buyers.items():
+        buyers += [buyer for buyer, products in buyer_products.items() if product in products]
+        yield (product, set(buyers))
 
-        for k in range(0, K):
-            dprint("Running for k: ", k, k2)
+def methodIntersectProduct(buyer_products, product_buyers):
+    for buyer, products in buyer_products.items():
+        yield (buyer, list(filter(lambda product: product in product_buyers and buyer in product_buyers[product], products)))
+def methodUnionProduct(buyer_products, product_buyers):
+    for buyer, products in buyer_products.items():
+        products += [product for product, buyers in product_buyers.items() if buyer in buyers]
+        yield (buyer, set(products))
 
-            predictedBuyers = predict_buyers_for_products(B, testProducts,
-                                                          weights.cutOffK(lambda i1, i2, products: len(products), k))
+results = [{},{}]
+for mi, m in enumerate([methodIntersect, methodUnion]):
+    for k2 in range(0, K):
+        with timer:
+            predictedProducts = predict_products_for_buyers(B, testBuyers,
+                                                            weights.cutOffK(weights.simple_weight(), k2))
+            buyer_products = {buyer: products for buyer, products in predictedProducts}
 
-            product_buyers = {product: buyers for product, buyers in predictedBuyers}
+            for k in map(int, np.linspace(230, 240, K)):
+                dprint("Running for k: ", k, k2)
+
+                predictedBuyers = predict_buyers_for_products(B, testProducts,
+                                                              weights.cutOffK(weights.bipartite_products_weights(B), k))
+
+                product_buyers = {product: buyers for product, buyers in predictedBuyers}
 
 
-            predicted = [(product, list(filter(lambda buyer: buyer in buyer_products and product in buyer_products[buyer], buyers))) for product, buyers in product_buyers.items()]
+                predicted = list(m(buyer_products, product_buyers))
 
 
-            scores = validate_buyers_for_products(B_test, predicted, all_c)
-            #results[(k, k2)] = tuple(np.average(list(scores), axis=0))
-            results[(k, k2)] = list(scores)
+                #scores = validate_buyers_for_products(B_test, predicted, all_c)
+                scores = validate_products_for_buyers(B_test, predicted, all_c)
+                #results[(k, k2)] = tuple(np.average(list(scores), axis=0))
+                results[mi][(k, k2)] = list(scores)
 
 if saveto:
     with open(saveto, 'wb') as f:
         pickle.dump(Result(results, timer),f)
 
 
-printResults(results)
+print('Intersect:')
+printResults(results[0])
+
+print('Union:')
+printResults(results[1])
 
 print("Average time %s" % timer.getAverage())
